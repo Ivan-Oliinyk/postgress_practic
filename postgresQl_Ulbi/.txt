@@ -1,0 +1,6 @@
+1) sudo -u postgres(user name) psql  ===> (enter to postgres)
+2) <username>: create database <db(for example)>;  ===> (create db)
+3) <username>: \l;  ===> (show all db)
+4) <username>: \connect <db_name>; ===> (connected to db)
+5)  <db_name>: \dt; ===> (show all relations in db) 
+6)  <db_name>: 
