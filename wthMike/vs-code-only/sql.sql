@@ -1,3 +1,4 @@
+-- (for run cnt+shift+p  ===> >SQLite run)
 -- CREATE TABLE products(ID INT PRIMARY KEY, name VARCHAR(20), price INT, color VARCHAR(20)); 
 -- DROP TABLE products;
 
