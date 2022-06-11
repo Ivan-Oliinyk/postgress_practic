@@ -1,6 +1,6 @@
 const express = require("express");
 const logger = require("morgan");
-const userRoutes = require("./routes/user.routes");
+const apiRouter = require("./routes");
 
 const PORT = process.env.PORT || 8080;
 
@@ -21,7 +21,7 @@ app.get("/", (req, res) => {
   `);
 });
 
-app.use("/api/users", userRoutes);
+app.use("/api", apiRouter);
 
 const start = () => {
   app.listen(PORT, () => console.log(`Server run on port ${PORT}`));

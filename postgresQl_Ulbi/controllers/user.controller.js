@@ -1,6 +1,6 @@
 const db = require("../db/db");
 
-class userController {
+class UserController {
   async getAllUsers(req, res) {
     try {
       const users = await db.query(`SELECT * FROM person`);
@@ -14,13 +14,16 @@ class userController {
   async getOneUserById(req, res) {
     try {
       const { userId } = req.params;
-      console.log(userId);
 
       const user = await db.query(
         `SELECT * FROM person WHERE id=${String(userId)}`
       );
 
-      console.log(user);
+      if (!user.rows.length) {
+        return res
+          .status(400)
+          .json({ message: `Can not find user with id:${userId}` });
+      }
 
       res.status(200).json({ message: "success", data: user.rows });
     } catch (err) {
@@ -64,18 +67,44 @@ class userController {
         [name, surname, userId]
       );
 
-      res
-        .status(200)
-        .json({
-          message: `Person with id:${userId} was updated!`,
-          data: user.rows[0],
-        });
+      if (!user.rows[0].length) {
+        return res
+          .status(400)
+          .json({ message: `Can not find user with id:${userId}` });
+      }
+
+      res.status(200).json({
+        message: `Person with id:${userId} was updated!`,
+        data: user.rows[0],
+      });
     } catch (err) {
       res.status(500).json({ message: err.message });
     }
   }
 
-  async removeUserById(req, res) {}
+  async removeUserById(req, res) {
+    try {
+      const id = req.query.id;
+
+      //nee fix for delete relation
+      const deletedUser = await db.query(
+        `DELETE FROM person WHERE id=${id} RETURNING *`
+      );
+
+      if (!deletedUser.rows.length) {
+        return res
+          .status(400)
+          .json({ message: `User with id:${id} is not found!` });
+      }
+
+      res.status(200).json({
+        message: `User with id:${id} was deleted!`,
+        data: deletedUser.rows,
+      });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  }
 }
 
-module.exports = new userController();
+module.exports = new UserController();
