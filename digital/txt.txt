@@ -1,0 +1,202 @@
+1)(Enter to psql) 
+psql -h localhost -U <user name> -d <database name>
+
+2) (create db)
+CREATE database shop_example;
+
+3)(show what have connect db)
+\d
+\dt 
+
+4)(connect to another database)
+\connect <database name>;
+
+5)(show all database)
+\l
+
+6)(create table)
+CREATE TABLE customer (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+);
+
+7)(show info about table);
+\d customer
+
+8)(create table with relation)
+CREATE TABLE product_photo (
+  id SERIAL PRIMARY KEY, 
+  url VARCHAR(255) NOT NULL, 
+  product_id INTEGER REFERENCES product(id)
+);
+
+9)(add colum to customer);
+INSERT INTO customer(name, phone, email)
+  VALUES ('Loki', '03', 'loki@gmail.com');
+
+10)(Get all Customers);
+SELECT * FROM customer;
+
+11)(alias);
+SELECT pp.* FROM product_photo pp;
+
+12)(operator JOIN) (LEFT RIGHT INNER) (где LEFT, RIGHT - будут показывать записи в соответсвующей таблице, INNER - будут показаны записи которые присутсвуют в обоих таблицах);
+(соединяем 2 таблицы(product_photo, product),
+ используя алисы для них (product_photo = рр, product = р)
+ при этом указываем с помощью LEFT что табличка product_photo первая,
+ (SELECT pp.*, p.name) - указываем что из pp(product_photo) берем все поля а из р(product) только поле name,
+  оператор ON указывает что выборку проводим по  p.id=pp.product_id
+)
+
+SELECT pp.*, p.name FROM product_photo pp
+  LEFT JOIN product p
+  ON p.id=pp.product_id;
+
+
+13)(cc.id as card_id будет отображать card.id как card_id в таблице)
+SELECT c.name, cc.id as card_id FROM customer c LEFT JOIN card cc on cc.customer_id=c.id;
+
+14)(Собира ем таблицу где sum(p.price) сума покупки а group by c.name - групировка одинаковых имен)
+shop_exaple=# SELECT c.name, sum(p.price) FROM customer c 
+  LEFT JOIN card cc ON cc.customer_id=c.id 
+  LEFT JOIN card_product cp ON cp.card_id=cc.id 
+  LEFT JOIN product p ON cp.product_id=p.id group by c.name;
+
+ name |  sum  
+------+-------
+ Mark |      
+ Nick |   200
+ Doly |      
+ Loki | 35800
+ Poly |  1700
+(5 rows)
+
+15)(coalesce(sum(p.price), 0)  вместо NULL будет отображать  0)
+shop_exaple=# SELECT c.name, coalesce(sum(p.price), 0) FROM customer c LEFT JOIN card cc ON cc.customer_id=c.id LEFT JOIN card_product cp ON cp.card_id=cc.id LEFT JOIN product p ON cp.product_id=p.id group by c.name;
+ name | coalesce 
+------+----------
+ Mark |        0
+ Nick |      200
+ Doly |        0
+ Loki |    35800
+ Poly |     1700
+(5 rows)
+
+16)(Добавлена сортирвка order by orders_sum desc)
+SELECT c.name, coalesce(sum(p.price), 0) as orders_sum FROM customer c
+  LEFT JOIN card cc ON cc.customer_id=c.id 
+  LEFT JOIN card_product cp ON cp.card_id=cc.id 
+  LEFT JOIN product p ON cp.product_id=p.id
+  group by c.name
+  order by orders_sum desc;
+
+name | orders_sum 
+------+------------
+ Loki |      35800
+ Poly |       1700
+ Nick |        200
+ Mark |          0
+ Doly |          0
+(5 rows)
+
+17)(если нужно все что больше нуля то (having sum(p.price)>0;))
+SELECT c.name, coalesce(sum(p.price), 0) as orders_sum FROM customer c 
+  LEFT JOIN card cc ON cc.customer_id=c.id 
+  LEFT JOIN card_product cp ON cp.card_id=cc.id 
+  LEFT JOIN product p ON cp.product_id=p.id
+  group by c.name                               
+  having sum(p.price)>0;
+
+ name | orders_sum 
+------+------------
+ Nick |        200
+ Loki |      35800
+ Poly |       1700
+(3 rows)
+
+18)SORTS
+order by name (по умолчанию asc)
+если проблемы с кодировкой использовать (order by name using ~<~;)(order by name using ~>~;)
+
+SELECT * FROM customer order by name;
+ id | name |   phone    |     email      
+----+------+------------+----------------
+  3 | Doly | 03         | doly@gmail.com
+  5 | Loki | 03123123   | Loki@gmail.com
+  4 | Mark | 03123123   | mark@gmail.com
+  1 | Nick | 0935555555 | nick@gmail.com
+  2 | Poly | 093456712  | poly@gmail.com
+(5 rows)
+
+
+SELECT * FROM customer order by name desc;
+ id | name |   phone    |     email      
+----+------+------------+----------------
+  2 | Poly | 093456712  | poly@gmail.com
+  1 | Nick | 0935555555 | nick@gmail.com
+  4 | Mark | 03123123   | mark@gmail.com
+  5 | Loki | 03123123   | Loki@gmail.com
+  3 | Doly | 03         | doly@gmail.com
+(5 rows)
+
+
+SELECT * FROM customer order by name using ~<~;
+
+ id | name |   phone    |     email      
+----+------+------------+----------------
+  3 | Doly | 03         | doly@gmail.com
+  5 | Loki | 03123123   | Loki@gmail.com
+  4 | Mark | 03123123   | mark@gmail.com
+  1 | Nick | 0935555555 | nick@gmail.com
+  2 | Poly | 093456712  | poly@gmail.com
+(5 rows)
+
+
+SELECT * FROM customer order by name using ~>~;
+
+id | name |   phone    |     email      
+----+------+------------+----------------
+  2 | Poly | 093456712  | poly@gmail.com
+  1 | Nick | 0935555555 | nick@gmail.com
+  4 | Mark | 03123123   | mark@gmail.com
+  5 | Loki | 03123123   | Loki@gmail.com
+  3 | Doly | 03         | doly@gmail.com
+
+
+19)LIMIT
+SELECT * FROM customer order by name using ~>~ limit 2;
+
+ id | name |   phone    |     email      
+----+------+------------+----------------
+  2 | Poly | 093456712  | poly@gmail.com
+  1 | Nick | 0935555555 | nick@gmail.com
+(2 rows)
+
+20) offset
+
+SELECT * FROM customer order by name using ~>~ limit 1 offset 1;
+
+ id | name |   phone    |     email      
+----+------+------------+----------------
+  1 | Nick | 0935555555 | nick@gmail.com
+(1 row)
+
+SELECT * FROM customer order by name using ~>~ limit 1 offset 0;
+
+ id | name |   phone   |     email      
+----+------+-----------+----------------
+  2 | Poly | 093456712 | poly@gmail.com
+(1 row)
+
+SELECT * FROM customer order by name using ~>~ limit 1 offset 2;
+
+ id | name |  phone   |     email      
+----+------+----------+----------------
+  4 | Mark | 03123123 | mark@gmail.com
+(1 row)
+
+
+
+
